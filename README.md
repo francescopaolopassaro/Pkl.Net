@@ -2,6 +2,8 @@
 
 A modern, type-safe configuration management library for .NET, bringing the power of Apple's **Pkl** configuration language to the C# ecosystem — with **zero external dependencies**.
 
+![Pkl.Net Logo](assets/icon.jpg)
+
 > **Pkl.Net is a community-driven open-source project. It is not officially affiliated with or endorsed by Apple Inc.**
 >
 > The Pkl language, its tooling, and its intellectual property are owned exclusively by Apple Inc.
