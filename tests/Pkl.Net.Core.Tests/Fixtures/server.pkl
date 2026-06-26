@@ -1,0 +1,8 @@
+/// Pkl.Net - Passaro Francesco Paolo 2026
+/// Test fixture: server configuration with nested object
+
+host: String = "localhost"
+port: Int(this >= 1024 && this <= 65535) = 8080
+debug: Boolean = false
+maxConnections: Int = 100
+tags: Listing<String> = new { "web"; "api"; "v2" }

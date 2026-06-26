@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <PackageId>Pkl.Net.Tools</PackageId>
+    <Title>Pkl.Net.Tools</Title>
+    <Description>
+      Code-generation tooling for Pkl.Net. Evaluates Pkl modules and emits
+      strongly-typed C# classes, enabling compile-time safety for your Pkl
+      configuration schemas. Depends on Pkl.Net.Core.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pkl.Net.Core\Pkl.Net.Core.csproj" />
+  </ItemGroup>
+
+</Project>

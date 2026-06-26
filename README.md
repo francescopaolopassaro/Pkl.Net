@@ -1,27 +1,947 @@
 # Pkl.Net
 
-A modern, type-safe configuration management library for .NET, bringing the power of Apple's **Pkl** configuration language to the C# ecosystem.
+A modern, type-safe configuration management library for .NET, bringing the power of Apple's **Pkl** configuration language to the C# ecosystem — with **zero external dependencies**.
+
+> **Pkl.Net is a community-driven open-source project. It is not officially affiliated with or endorsed by Apple Inc.**
+>
+> The Pkl language, its tooling, and its intellectual property are owned exclusively by Apple Inc.
+> Pkl.Net was inspired by the official [pkl-go](https://github.com/apple/pkl-go) binding published by Apple under the **Apache License 2.0**.
+> No source code from pkl-go was copied or ported; Pkl.Net is an independent implementation in C# that reimplements the same binary protocol documented in the Pkl specification.
+> We gratefully acknowledge Apple's work on Pkl and pkl-go.
+
+---
 
 ## Why Pkl.Net?
 
-Traditional configuration formats like **YAML** and **JSON** are static, hard to maintain, and prone to runtime failures. They lack native validation, leading to common pitfalls like indentation errors, typos, and missing required values.
+Traditional formats like YAML and JSON are static, unvalidated, and error-prone.
 
-**Pkl.Net** solves this by embedding Pkl's programmable configuration engine into .NET. It bridges the gap between Pkl's robust, type-safe language and your C# code.
+```yaml
+# ❌ YAML: runtime crash, no type safety
+server:
+  port: "eight-zero-eight-zero"
+```
 
-### Key Features
+**Pkl** catches this at evaluation time, before your application starts:
 
-* 🚫 **No More YAML/JSON Hell:** Eliminate runtime configuration crashes caused by syntax errors or missing fields.
-* 🛡️ **Built-in Validation:** Leverage Pkl's native type system (e.g., `port: Int(this >= 1024)`) to catch invalid configurations before your app even starts.
-* 🧊 **DRY (Don't Repeat Yourself):** Use Pkl’s classes, inheritance, and functions to manage complex, multi-environment configurations without copy-pasting.
-* ⚙️ **Seamless .NET Integration:** Easily map Pkl configuration files directly into strongly-typed C# records or classes, or hook it natively into `IConfiguration`.
-* 🚀 **Cross-Platform:** Works wherever .NET works (Windows, macOS, Linux).
+```pkl
+// ✅ Pkl: constraint enforced at load time
+port: Int(this >= 1024 && this <= 65535) = 8080
+```
+
+**Pkl.Net** bridges Pkl and .NET with a clean C# API, typed deserialization, ASP.NET Core integration, and a public MessagePack encoder/decoder — all in a single library with no third-party dependencies.
+
+---
+
+## Installation
+
+```
+dotnet add package Pkl.Net.Core
+dotnet add package Pkl.Net.Extensions.Configuration   # optional, for IConfiguration
+dotnet add package Pkl.Net.Tools                      # optional, for code generation
+```
+
+**Prerequisite:** the [`pkl`](https://pkl-lang.org/main/current/pkl-cli/index.html) CLI must be installed and available on `PATH` (or set the `PKL_EXEC` environment variable).
+
+---
 
 ## Quick Start
 
-Instead of fighting with unvalidated YAML:
+### 1. Load a Pkl file into a dictionary
+
+```csharp
+using PklNet.Core;
+
+// One-liner: opens pkl server, evaluates, closes
+var config = Pkl.Load<Dictionary<string, object?>>("config.pkl");
+Console.WriteLine(config!["host"]);   // "localhost"
+Console.WriteLine(config["port"]);    // 8080
+```
+
+### 2. Load into a strongly-typed C# class
+
+Define your Pkl file (`server.pkl`):
+
+```pkl
+host: String = "localhost"
+port: Int(this >= 1024) = 8080
+debug: Boolean = false
+maxConnections: Int = 100
+```
+
+Define the matching C# class:
+
+```csharp
+public sealed class ServerConfig
+{
+    public string Host { get; set; } = "";
+    public int Port { get; set; }
+    public bool Debug { get; set; }
+    public int MaxConnections { get; set; }
+}
+```
+
+Load it:
+
+```csharp
+var cfg = Pkl.Load<ServerConfig>("server.pkl");
+Console.WriteLine($"{cfg!.Host}:{cfg.Port}");  // localhost:8080
+```
+
+---
+
+## Usage Examples
+
+### Reading a Pkl file
+
+```csharp
+using PklNet.Core;
+
+// From a file path
+var result = Pkl.Load<Dictionary<string, object?>>("app.pkl");
+
+// From a URI
+using var manager = PklEvaluatorManager.Create();
+using var eval    = manager.NewEvaluator();
+var result2 = eval.EvaluateModule<Dictionary<string, object?>>(
+    ModuleSource.FromUri("https://example.com/remote.pkl"));
+```
+
+### Evaluating inline Pkl text
+
+```csharp
+var config = Pkl.LoadText<Dictionary<string, object?>>("""
+    appName: String = "MyApp"
+    port: Int = 3000
+    logLevel: String = "info"
+    """);
+
+Console.WriteLine(config!["appName"]);   // MyApp
+Console.WriteLine(config["port"]);       // 3000
+```
+
+### Evaluating a specific expression
+
+```csharp
+using var manager = PklEvaluatorManager.Create();
+using var eval    = manager.NewEvaluator();
+
+var source = ModuleSource.FromText("port: Int = 5432");
+long port = eval.EvaluateExpression<long>(source, "port");
+Console.WriteLine(port);  // 5432
+```
+
+### Getting rendered output text
+
+```csharp
+// Useful when Pkl renders YAML, JSON, XML, etc.
+var opts = EvaluatorOptions.Preconfigured();
+opts.OutputFormat = "json";
+
+string json = Pkl.EvaluateOutputText("config.pkl", opts);
+Console.WriteLine(json);
+```
+
+---
+
+## Creating a Pkl Configuration File
+
+Pkl files are plain text. You can write them programmatically:
+
+```csharp
+using System.IO;
+
+var pklContent = """
+    // Generated by MyApp
+    host: String = "localhost"
+    port: Int = 8080
+    debug: Boolean = false
+    tags: Listing<String> = new { "web"; "api" }
+    """;
+
+File.WriteAllText("generated.pkl", pklContent);
+
+// Then load it back
+var cfg = Pkl.Load<Dictionary<string, object?>>("generated.pkl");
+```
+
+---
+
+## Updating / Modifying Parameters
+
+Pkl files are immutable at the language level — "updating" means generating a new file with the changed values. The recommended pattern:
+
+### Update one property
+
+```csharp
+using PklNet.Core;
+using System.IO;
+
+static string UpdatePklProperty(string filePath, string key, string newValue)
+{
+    var lines = File.ReadAllLines(filePath).ToList();
+    for (int i = 0; i < lines.Count; i++)
+    {
+        var trimmed = lines[i].TrimStart();
+        if (trimmed.StartsWith(key + ":") || trimmed.StartsWith(key + " "))
+        {
+            // Re-evaluate the type from the existing line
+            var colonIdx = lines[i].IndexOf(':');
+            if (colonIdx >= 0)
+            {
+                var typePart = lines[i][(colonIdx + 1)..].Trim();
+                var eqIdx    = typePart.IndexOf('=');
+                var typeDef  = eqIdx > 0 ? typePart[..eqIdx].Trim() : "";
+                var indent   = new string(' ', lines[i].Length - lines[i].TrimStart().Length);
+                lines[i] = typeDef.Length > 0
+                    ? $"{indent}{key}: {typeDef} = {newValue}"
+                    : $"{indent}{key} = {newValue}";
+                break;
+            }
+        }
+    }
+    var updated = string.Join(Environment.NewLine, lines);
+    File.WriteAllText(filePath, updated);
+    return updated;
+}
+
+// Usage
+UpdatePklProperty("server.pkl", "port", "9090");
+UpdatePklProperty("server.pkl", "debug", "true");
+```
+
+### Override with Pkl amend syntax
+
+Pkl supports amending (extending) a base module without modifying it:
+
+```csharp
+// Write an amend file that overrides specific values
+var amended = """
+    amends "server.pkl"
+
+    port = 9090
+    debug = true
+    """;
+
+File.WriteAllText("server.prod.pkl", amended);
+
+var prod = Pkl.Load<ServerConfig>("server.prod.pkl");
+Console.WriteLine(prod!.Port);   // 9090
+Console.WriteLine(prod.Debug);   // true
+```
+
+---
+
+## Deleting a Parameter
+
+Remove a line from a Pkl file:
+
+```csharp
+static void DeletePklProperty(string filePath, string key)
+{
+    var lines = File.ReadAllLines(filePath)
+        .Where(l => {
+            var t = l.TrimStart();
+            return !(t.StartsWith(key + ":") || t.StartsWith(key + " = "));
+        })
+        .ToArray();
+    File.WriteAllText(filePath, string.Join(Environment.NewLine, lines));
+}
+
+// Usage
+DeletePklProperty("server.pkl", "debug");
+```
+
+---
+
+## Adding a New Parameter
+
+```csharp
+static void AddPklProperty(string filePath, string key, string type, string value)
+{
+    var line = $"{key}: {type} = {value}";
+    File.AppendAllLines(filePath, [line]);
+}
+
+// Examples
+AddPklProperty("server.pkl", "maxRetries",  "Int",     "3");
+AddPklProperty("server.pkl", "serviceName", "String",  "\"api-gateway\"");
+AddPklProperty("server.pkl", "timeout",     "Duration","30.s");
+AddPklProperty("server.pkl", "enabled",     "Boolean", "true");
+```
+
+---
+
+## Injecting External Properties at Runtime
+
+Override or supply values without modifying the file:
+
+```csharp
+var opts = EvaluatorOptions.Preconfigured();
+opts.Properties = new Dictionary<string, string>
+{
+    ["environment"] = "production",
+    ["version"]     = "2.1.0",
+};
+
+using var manager = PklEvaluatorManager.Create(opts);
+using var eval    = manager.NewEvaluator(opts);
+
+// In the pkl file: value = read("prop:environment")
+var result = eval.EvaluateModule<Dictionary<string, object?>>(
+    ModuleSource.FromFile("app.pkl"));
+```
+
+---
+
+## All Pkl Value Types
+
+```csharp
+var result = Pkl.LoadText<Dictionary<string, object?>>("""
+    name:     String   = "Pkl.Net"
+    version:  Int      = 1
+    pi:       Float    = 3.14159
+    active:   Boolean  = true
+    nothing:  String?  = null
+    timeout:  Duration = 30.s
+    diskSize: DataSize = 512.mib
+    items:    Listing<Int> = new { 1; 2; 3 }
+    env:      Mapping<String, String> = new { ["KEY"] = "value" }
+    """);
+
+using PklNet.Core.Values;
+
+var timeout  = (PklDuration)result!["timeout"];
+Console.WriteLine(timeout.ToTimeSpan());    // 00:00:30
+
+var diskSize = (PklDataSize)result["diskSize"];
+Console.WriteLine(diskSize.ToBytes());      // 536870912
+
+var items = (List<object?>)result["items"];
+Console.WriteLine(string.Join(", ", items)); // 1, 2, 3
+```
+
+---
+
+## ASP.NET Core — IConfiguration Integration
+
+### Add a Pkl file as configuration source
+
+```csharp
+// Program.cs
+using PklNet.Extensions.Configuration;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: true)
+    .AddPklFile("config/app.pkl", reloadOnChange: true)
+    .AddPklFile($"config/app.{builder.Environment.EnvironmentName}.pkl", optional: true);
+
+var app = builder.Build();
+```
+
+### Inject inline Pkl text (useful for tests)
+
+```csharp
+builder.Configuration.AddPklText("""
+    Logging {
+        Level = "Debug"
+    }
+    AllowedHosts = "*"
+    """);
+```
+
+### Bind to typed options
+
+```csharp
+// server.pkl
+// host: String = "0.0.0.0"
+// port: Int    = 8080
+
+public sealed class ServerOptions
+{
+    public string Host { get; set; } = "localhost";
+    public int    Port { get; set; } = 80;
+}
+
+// Program.cs
+builder.Services
+    .Configure<ServerOptions>(builder.Configuration.GetSection("server"));
+```
+
+---
+
+## Reusing an Evaluator (Advanced)
+
+Opening a new pkl process per evaluation is expensive. Reuse the manager and evaluator:
+
+```csharp
+using var manager = PklEvaluatorManager.Create(EvaluatorOptions.Preconfigured());
+using var eval    = manager.NewEvaluator();
+
+// Evaluate many files on the same process
+foreach (var file in Directory.EnumerateFiles("configs", "*.pkl"))
+{
+    var cfg = eval.EvaluateModule<Dictionary<string, object?>>(ModuleSource.FromFile(file));
+    Console.WriteLine($"{file}: {cfg!.Count} properties");
+}
+```
+
+---
+
+## Custom Module Reader
+
+Serve Pkl modules from any source (database, embedded resources, memory):
+
+```csharp
+public sealed class EmbeddedModuleReader : IPklModuleReader
+{
+    public string Scheme              => "embedded";
+    public bool HasHierarchicalUris   => false;
+    public bool IsGlobbable           => false;
+    public bool IsLocal               => true;
+
+    public string Read(Uri uri)
+    {
+        // uri.Host is the "filename", e.g. embedded:database.pkl
+        var resourceName = uri.Host;
+        using var stream = Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream($"MyApp.Configs.{resourceName}")!;
+        return new StreamReader(stream).ReadToEnd();
+    }
+
+    public IReadOnlyList<(string Name, bool IsDirectory)> ListElements(Uri uri)
+        => Array.Empty<(string, bool)>();
+}
+
+// Register it
+var opts = EvaluatorOptions.Preconfigured();
+opts.ModuleReaders = [new EmbeddedModuleReader()];
+opts.AllowedModules!.Add(@"embedded:");
+
+var cfg = Pkl.Load<Dictionary<string, object?>>("embedded:database.pkl", opts);
+```
+
+---
+
+## SchemaRegistry — Typed Deserialization of Nested Objects
+
+Map Pkl class names to C# types for automatic deserialization:
+
+```csharp
+// database.pkl
+// class DatabaseConfig {
+//   host: String
+//   port: Int
+// }
+// db: DatabaseConfig = new { host = "db.local"; port = 5432 }
+
+public sealed class DatabaseConfig
+{
+    public string Host { get; set; } = "";
+    public int Port { get; set; }
+}
+
+// Register once at startup
+SchemaRegistry.Register<DatabaseConfig>("database#DatabaseConfig");
+
+var result = Pkl.Load<Dictionary<string, object?>>("database.pkl");
+var db = (DatabaseConfig)result!["db"]!;
+Console.WriteLine($"{db.Host}:{db.Port}");  // db.local:5432
+```
+
+---
+
+## Built-in MessagePack API
+
+Pkl.Net ships a full standalone MessagePack encoder/decoder — use it independently of Pkl:
+
+```csharp
+using PklNet.Core;
+
+// Serialize a map
+var map = new Dictionary<string, object?>
+{
+    ["name"]    = "Pkl.Net",
+    ["version"] = 1L,
+    ["active"]  = true,
+    ["score"]   = 9.5,
+};
+byte[] bytes = MsgPack.SerializeMap(map);
+
+// Deserialize
+var decoded = MsgPack.DeserializeMap(bytes);
+Console.WriteLine(decoded["name"]);    // Pkl.Net
+Console.WriteLine(decoded["version"]); // 1
+
+// Fluent writer
+var doc = MsgPack.Serialize(w =>
+    w.ArrayHeader(2)
+     .String("hello")
+     .Int(42));
+
+// Fluent reader
+var reader = MsgPack.CreateReader(doc.ToBytes());
+int  count  = reader.ReadArrayHeader(); // 2
+string txt  = reader.ReadString()!;     // "hello"
+long   num  = reader.ReadInt();         // 42
+```
+
+---
+
+## Code Generator (Pkl.Net.Tools)
+
+Generate C# classes from Pkl modules:
+
+```csharp
+using PklNet.Tools.CodeGen;
+
+var generator = new PklCodeGenerator();
+string outputPath = generator.Generate(
+    pklFilePath:      "configs/server.pkl",
+    outputDirectory:  "Generated/",
+    @namespace:       "MyApp.Config");
+
+// Produces: Generated/Server.pkl.cs
+// with a public sealed class Server { ... }
+```
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `PKL_EXEC` | Override the path to the pkl binary (e.g. `/opt/bin/pkl`). |
+| `PKL_SKIP_INTEGRATION` | Set to `1` to skip integration tests that require pkl on PATH. |
+
+---
+
+## Error Handling
+
+```csharp
+using PklNet.Core;
+
+try
+{
+    var cfg = Pkl.LoadText<Dictionary<string, object?>>(
+        "port: Int(this >= 1024) = 80");  // violates constraint
+}
+catch (PklException ex)
+{
+    Console.Error.WriteLine($"Pkl evaluation error: {ex.Message}");
+}
+```
+
+---
+
+---
+
+## Migrating from appsettings.json
+
+### Before — standard ASP.NET Core JSON config
+
+```json
+// appsettings.json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=mydb;User=sa;Password=secret"
+  },
+  "App": {
+    "Name": "MyWebApp",
+    "Port": 5000,
+    "Debug": false,
+    "MaxRequestSize": 10485760
+  }
+}
+```
+
+```csharp
+// Program.cs — before
+var builder = WebApplication.CreateBuilder(args);
+// appsettings.json is loaded automatically
+```
+
+### After — equivalent Pkl file
+
+```pkl
+// appsettings.pkl
+Logging {
+  LogLevel {
+    Default = "Information"
+    ["Microsoft.AspNetCore"] = "Warning"
+  }
+}
+AllowedHosts = "*"
+ConnectionStrings {
+  DefaultConnection = "Server=localhost;Database=mydb;User=sa;Password=secret"
+}
+App {
+  Name: String = "MyWebApp"
+  Port: Int(this > 0 && this <= 65535) = 5000   // ← validated!
+  Debug: Boolean = false
+  MaxRequestSize: DataSize = 10.mib              // ← readable unit!
+}
+```
+
+```csharp
+// Program.cs — after
+using PklNet.Extensions.Configuration;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration
+    .AddPklFile("appsettings.pkl")
+    .AddPklFile($"appsettings.{builder.Environment.EnvironmentName}.pkl",
+                reloadOnChange: true);  // optional, live reload
+
+var app = builder.Build();
+```
+
+### Environment-specific overrides (replaces appsettings.Development.json)
+
+```pkl
+// appsettings.Development.pkl  — amends the base without copying it
+amends "appsettings.pkl"
+
+App {
+  Port  = 5001
+  Debug = true
+}
+ConnectionStrings {
+  DefaultConnection = "Server=localhost;Database=mydb_dev;Trusted_Connection=True"
+}
+```
+
+### Binding to typed options — same as with JSON
+
+```csharp
+public sealed class AppOptions
+{
+    public string Name { get; set; } = "";
+    public int    Port { get; set; }
+    public bool   Debug { get; set; }
+}
+
+// Program.cs
+builder.Services.Configure<AppOptions>(builder.Configuration.GetSection("App"));
+
+// In a controller / service
+public class HomeController(IOptions<AppOptions> opts) : Controller
+{
+    public IActionResult Index()
+        => Ok($"{opts.Value.Name} on port {opts.Value.Port}");
+}
+```
+
+---
+
+## Migrating from YAML
+
+### Before — YAML config (e.g. Serilog, Kubernetes-style, custom)
 
 ```yaml
-# old_config.yaml
-server:
-  host: "localhost"
-  port: "eight-zero-eight-zero" # ❌ Runtime crash!
+# config.yaml
+app:
+  name: MyService
+  version: "2.1.0"
+  port: 8080
+  debug: false
+
+database:
+  host: db.internal
+  port: 5432
+  name: mydb
+  poolSize: 10
+
+cache:
+  ttl: 300         # seconds — not self-documenting
+  maxSize: 524288  # bytes — what unit is this?
+
+features:
+  darkMode: false
+  betaApi: true
+  newDashboard: false
+
+tags:
+  - web
+  - api
+  - v2
+```
+
+### After — equivalent Pkl file
+
+```pkl
+// config.pkl
+app {
+  name: String    = "MyService"
+  version: String = "2.1.0"
+  port: Int(this >= 1024 && this <= 65535) = 8080  // type + constraint
+  debug: Boolean  = false
+}
+
+database {
+  host: String  = "db.internal"
+  port: Int     = 5432
+  name: String  = "mydb"
+  poolSize: Int(this > 0) = 10
+}
+
+cache {
+  ttl:     Duration = 300.s    // self-documenting: 5 minutes
+  maxSize: DataSize = 512.kib  // clearly 512 kibibytes
+}
+
+features: Mapping<String, Boolean> = new {
+  ["darkMode"]     = false
+  ["betaApi"]      = true
+  ["newDashboard"] = false
+}
+
+tags: Listing<String> = new { "web"; "api"; "v2" }
+```
+
+### Loading YAML-style config with Pkl.Net
+
+```csharp
+// Option A — via IConfiguration (flattened, colon-separated keys)
+using PklNet.Extensions.Configuration;
+
+var config = new ConfigurationBuilder()
+    .AddPklFile("config.pkl")
+    .Build();
+
+string appName = config["app:name"]!;          // "MyService"
+int    dbPort  = int.Parse(config["database:port"]!); // 5432
+string ttl     = config["cache:ttl"]!;         // "300 s"
+
+// Option B — typed deserialization
+var cfg = Pkl.Load<AppConfig>("config.pkl");
+Console.WriteLine(cfg!.App.Port);   // 8080
+Console.WriteLine(cfg.Cache.Ttl);   // PklDuration { Value=300, Unit="s" }
+
+
+// C# classes
+public sealed class AppConfig
+{
+    public AppSection      App      { get; set; } = new();
+    public DatabaseSection Database { get; set; } = new();
+    public CacheSection    Cache    { get; set; } = new();
+}
+public sealed class AppSection
+{
+    public string Name    { get; set; } = "";
+    public string Version { get; set; } = "";
+    public int    Port    { get; set; }
+    public bool   Debug   { get; set; }
+}
+public sealed class DatabaseSection
+{
+    public string Host     { get; set; } = "";
+    public int    Port     { get; set; }
+    public string Name     { get; set; } = "";
+    public int    PoolSize { get; set; }
+}
+public sealed class CacheSection
+{
+    public PklNet.Core.Values.PklDuration?  Ttl     { get; set; }
+    public PklNet.Core.Values.PklDataSize?  MaxSize { get; set; }
+}
+```
+
+---
+
+## Writing Pkl Files by Hand — Syntax Reference
+
+### Primitive types
+
+```pkl
+// String
+greeting: String = "Hello, World!"
+multiLine: String = """
+    line one
+    line two
+    """
+
+// Integer
+port: Int = 8080
+negativeOffset: Int = -7
+bigNumber: Int = 1_000_000   // underscores for readability
+
+// Float
+pi: Float = 3.14159
+
+// Boolean
+enabled: Boolean = true
+disabled: Boolean = false
+
+// Null / nullable
+maybeHost: String? = null
+maybePort: Int?    = null
+```
+
+### Constrained types (validation built-in)
+
+```pkl
+// Inline constraint — evaluated at load time
+port:        Int(this >= 1024 && this <= 65535) = 8080
+name:        String(this.length > 0) = "required"
+probability: Float(this >= 0.0 && this <= 1.0) = 0.75
+```
+
+### Duration and DataSize
+
+```pkl
+// Duration — ns, us, ms, s, min, h, d
+requestTimeout: Duration = 30.s
+sessionExpiry:  Duration = 2.h
+retryDelay:     Duration = 500.ms
+
+// DataSize — b, kb, kib, mb, mib, gb, gib, tb, tib
+uploadLimit: DataSize = 10.mb
+cacheSize:   DataSize = 512.mib
+diskQuota:   DataSize = 2.gb
+```
+
+### Collections
+
+```pkl
+// Listing (ordered, allows duplicates)
+ports: Listing<Int> = new { 80; 443; 8080 }
+roles: Listing<String> = new { "admin"; "user"; "guest" }
+
+// Mapping (key → value)
+env: Mapping<String, String> = new {
+  ["NODE_ENV"]  = "production"
+  ["LOG_LEVEL"] = "warn"
+}
+
+flags: Mapping<String, Boolean> = new {
+  ["feature-x"] = true
+  ["feature-y"] = false
+}
+
+// Set (unique elements)
+allowedIps: Set<String> = Set("192.168.1.1", "10.0.0.1")
+```
+
+### Nested objects (modules / classes)
+
+```pkl
+// Inline anonymous object
+database {
+  host: String = "localhost"
+  port: Int    = 5432
+  name: String = "mydb"
+}
+
+// Named class
+class ServerConfig {
+  host: String = "localhost"
+  port: Int    = 80
+  tls:  Boolean = false
+}
+
+primary: ServerConfig = new {
+  port = 443
+  tls  = true
+}
+```
+
+### Inheritance and amend
+
+```pkl
+// base.pkl
+appName: String = "BaseApp"
+port:    Int    = 3000
+debug:   Boolean = false
+
+// production.pkl  — override specific values without copy-paste
+amends "base.pkl"
+port  = 80
+debug = false
+
+// development.pkl
+amends "base.pkl"
+port  = 3001
+debug = true
+```
+
+### Reading from environment / properties
+
+```pkl
+// Read an environment variable (requires env: in AllowedResources)
+dbPassword: String = read("env:DB_PASSWORD")
+
+// Read an external property injected via EvaluatorOptions.Properties
+region: String = read("prop:deploy_region")
+
+// With a fallback default
+logLevel: String = read?("env:LOG_LEVEL") ?? "info"
+```
+
+### Comments
+
+```pkl
+// Single-line comment
+name: String = "value"   // inline comment
+
+/// Doc comment (shown in IDE)
+/// This is the server port.
+port: Int = 8080
+
+/*
+  Multi-line block comment
+*/
+```
+
+---
+
+## Requirements
+
+- .NET 8 or later
+- The [`pkl`](https://pkl-lang.org/main/current/pkl-cli/index.html) CLI binary (v0.25+) installed and on `PATH`
+
+---
+
+## License
+
+Pkl.Net is released under the **MIT License with Attribution Requirement**.  
+You are free to use it for any purpose — commercial or open-source — as long as you include a clearly visible citation of Pkl.Net in your documentation, About page, or dependency list. See [LICENSE](LICENSE) for the exact required wording.
+
+**Example attribution (any of the following is sufficient):**
+
+> Uses [Pkl.Net](https://github.com/francescopaolopassaro/Pkl.Net) by Francesco Paolo Passaro
+
+or in a NuGet dependency list:
+
+> `Pkl.Net.Core` — Francesco Paolo Passaro — https://www.nuget.org/packages/Pkl.Net.Core
+
+---
+
+## Attribution & Legal Notices
+
+![Pkl.Net Logo](assets/icon.jpg)
+
+**Pkl.Net** is a community-driven open-source project. It is **not** officially affiliated with, sponsored by, or endorsed by **Apple Inc.**
+
+The **Pkl** configuration language, the `pkl` CLI toolchain, and all associated intellectual property are the exclusive property of **Apple Inc.**
+
+Pkl.Net was inspired by the official Apple open-source binding [**pkl-go**](https://github.com/apple/pkl-go), which is published by Apple Inc. under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). **No source code from pkl-go has been copied, translated, or ported.** Pkl.Net is an independent C# reimplementation of the same binary protocol. We gratefully acknowledge Apple's work on the Pkl language and the pkl-go reference binding, and we cite them here as the original source of inspiration.
+
+The **Apple** name and logo are registered trademarks of **Apple Inc.**, registered in the U.S. and other countries.
+
+---
+
+- GitHub: <https://github.com/francescopaolopassaro/Pkl.Net>
+- NuGet: <https://www.nuget.org/packages/Pkl.Net.Core>
+- Pkl language: <https://pkl-lang.org>
+
+*Pkl.Net — Passaro Francesco Paolo 2026*

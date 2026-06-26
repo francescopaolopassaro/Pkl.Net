@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <PackageId>Pkl.Net.Core</PackageId>
+    <Title>Pkl.Net.Core</Title>
+    <Description>
+      Core library for evaluating Apple Pkl configuration files from .NET.
+      Implements the pkl-server binary protocol (MessagePack) from scratch with
+      zero external dependencies. Includes a public MsgPack encoder/decoder usable
+      independently of Pkl. Targets .NET 8+.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Pkl.Net.Core.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

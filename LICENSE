@@ -1,4 +1,4 @@
-MIT License
+MIT License — with Attribution Requirement
 
 Copyright (c) 2026 Francesco Paolo Passaro
 
@@ -9,8 +9,32 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. ATTRIBUTION REQUIREMENT (applies to all uses, commercial and non-commercial)
+
+   Any software, product, service, or publication that uses or distributes this
+   Software, in whole or in part, must include a clearly visible attribution in
+   one of the following forms:
+
+   a) In the documentation, About page, or credits of the software:
+      "Uses Pkl.Net by Francesco Paolo Passaro
+       https://github.com/francescopaolopassaro/Pkl.Net"
+
+   b) In the NuGet package reference or dependency list:
+      Package: Pkl.Net.Core (and/or Pkl.Net.Tools, Pkl.Net.Extensions.Configuration)
+      Author:  Francesco Paolo Passaro
+      URL:     https://www.nuget.org/packages/Pkl.Net.Core
+
+   c) In source code that directly embeds or redistributes files from this project,
+      retain this copyright notice and the attribution text above.
+
+   The attribution must be reasonably prominent — it must not be hidden, obfuscated,
+   or placed where a typical user would not encounter it.
+
+2. STANDARD MIT CONDITIONS
+
+   The above copyright notice, this permission notice, and the attribution
+   requirement shall be included in all copies or substantial portions of the
+   Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -19,3 +43,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+THIRD-PARTY NOTICES
+
+The Pkl configuration language and the pkl-go binding are the intellectual
+property of Apple Inc. and are licensed under the Apache License, Version 2.0.
+Pkl.Net is inspired by pkl-go but is an independent reimplementation; no
+source code from pkl-go has been copied or ported.
+
+Apple, the Apple logo, and Pkl are trademarks of Apple Inc., registered in
+the U.S. and other countries. Pkl.Net is not affiliated with or endorsed by
+Apple Inc.

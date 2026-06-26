@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <PackageId>Pkl.Net.Extensions.Configuration</PackageId>
+    <Title>Pkl.Net.Extensions.Configuration</Title>
+    <Description>
+      ASP.NET Core IConfiguration integration for Pkl.Net. Adds AddPklFile() and
+      AddPklText() extension methods to IConfigurationBuilder so you can replace
+      appsettings.json or YAML files with validated, type-safe Pkl configuration.
+      Supports live reload on file change. Depends on Pkl.Net.Core.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pkl.Net.Core\Pkl.Net.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

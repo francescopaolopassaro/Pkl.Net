@@ -1,0 +1,51 @@
+<Project>
+
+  <!-- Shared metadata for all Pkl.Net NuGet packages -->
+  <!-- Pkl.Net - Passaro Francesco Paolo 2026 -->
+
+  <PropertyGroup>
+    <Authors>Passaro Francesco Paolo</Authors>
+    <Company>Passaro Francesco Paolo</Company>
+    <Copyright>Copyright © 2026 Passaro Francesco Paolo</Copyright>
+
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/francescopaolopassaro/Pkl.Net</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/francescopaolopassaro/Pkl.Net</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <PackageIcon>icon-nuget.jpg</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <PackageTags>pkl;configuration;apple-pkl;msgpack;dotnet;csharp;aspnetcore</PackageTags>
+    <PackageReleaseNotes>See CHANGELOG.md at https://github.com/francescopaolopassaro/Pkl.Net/blob/main/CHANGELOG.md</PackageReleaseNotes>
+
+    <!-- Source Link / deterministic build -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- Warnings as errors in Release -->
+    <TreatWarningsAsErrors Condition="'$(Configuration)'=='Release'">true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- Include logos, README, and LICENSE in every package -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)assets\icon-nuget.jpg"
+          Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)assets\icon.jpg"
+          Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)README.md"
+          Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)LICENSE"
+          Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+</Project>

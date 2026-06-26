@@ -1,0 +1,10 @@
+/// Pkl.Net - Passaro Francesco Paolo 2026
+/// Test fixture: Duration and DataSize types
+
+timeout: Duration = 30.s
+cacheExpiry: Duration = 5.min
+heartbeat: Duration = 1.h
+
+maxUpload: DataSize = 10.mb
+diskQuota: DataSize = 2.gb
+bufferSize: DataSize = 512.kib

@@ -1,0 +1,7 @@
+/// Pkl.Net - Passaro Francesco Paolo 2026
+/// Test fixture: Pkl collection types
+
+intList: Listing<Int> = new { 1; 2; 3; 4; 5 }
+stringMap: Mapping<String, String> = new { ["alpha"] = "a"; ["beta"] = "b"; ["gamma"] = "c" }
+mixed: Listing<Int> = new { 10; 20; 30 }
+empty: Listing<String> = new {}

@@ -55,3 +55,48 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Explicit bin/obj (case-insensitive patterns above cover most, these cover exact lowercase)
+bin/
+obj/
+
+# Test coverage reports
+coverage*/
+lcov.info
+*.trx
+*.coverage
+*.coveragexml
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider / JetBrains
+.idea/
+*.DotSettings.user
+
+# VS Code (keep shared settings, ignore personal overrides)
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+
+# Claude Code (AI assistant working files)
+.claude/
+.claude/**
+
+# Pkl package cache
+.pkl/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets — never commit
+appsettings.secrets.json
+secrets.json
+*.pfx
+*.p12

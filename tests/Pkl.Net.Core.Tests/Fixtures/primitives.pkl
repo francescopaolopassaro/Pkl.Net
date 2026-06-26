@@ -1,0 +1,12 @@
+/// Pkl.Net - Passaro Francesco Paolo 2026
+/// Test fixture: all primitive types
+
+name: String = "Pkl.Net"
+version: Int = 42
+pi: Float = 3.14159
+enabled: Boolean = true
+disabled: Boolean = false
+count: Int = 0
+large: Int = 9_999_999
+negative: Int = -7
+nothing: String? = null
