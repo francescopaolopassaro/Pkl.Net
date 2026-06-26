@@ -1,6 +1,6 @@
-﻿# Pkl.Net
+# Pkl.Net
 
-A modern, type-safe configuration management library for .NET, bringing the power of Apple's **Pkl** configuration language to the C# ecosystem â€” with **zero external dependencies**.
+A modern, type-safe configuration management library for .NET, bringing the power of Apple's **Pkl** configuration language to the C# ecosystem — with **zero external dependencies**.
 
 ![Pkl.Net Logo](assets/icon.jpg)
 
@@ -18,7 +18,7 @@ A modern, type-safe configuration management library for .NET, bringing the powe
 Traditional formats like YAML and JSON are static, unvalidated, and error-prone.
 
 ```yaml
-# âŒ YAML: runtime crash, no type safety
+# ❌ YAML: runtime crash, no type safety
 server:
   port: "eight-zero-eight-zero"
 ```
@@ -26,11 +26,11 @@ server:
 **Pkl** catches this at evaluation time, before your application starts:
 
 ```pkl
-// âœ… Pkl: constraint enforced at load time
+// ✅ Pkl: constraint enforced at load time
 port: Int(this >= 1024 && this <= 65535) = 8080
 ```
 
-**Pkl.Net** bridges Pkl and .NET with a clean C# API, typed deserialization, ASP.NET Core integration, and a public MessagePack encoder/decoder â€” all in a single library with no third-party dependencies.
+**Pkl.Net** bridges Pkl and .NET with a clean C# API, typed deserialization, ASP.NET Core integration, and a public MessagePack encoder/decoder — all in a single library with no third-party dependencies.
 
 ---
 
@@ -170,7 +170,7 @@ var cfg = Pkl.Load<Dictionary<string, object?>>("generated.pkl");
 
 ## Updating / Modifying Parameters
 
-Pkl files are immutable at the language level â€” "updating" means generating a new file with the changed values. The recommended pattern:
+Pkl files are immutable at the language level — "updating" means generating a new file with the changed values. The recommended pattern:
 
 ### Update one property
 
@@ -324,7 +324,7 @@ Console.WriteLine(string.Join(", ", items)); // 1, 2, 3
 
 ---
 
-## ASP.NET Core â€” IConfiguration Integration
+## ASP.NET Core — IConfiguration Integration
 
 ### Add a Pkl file as configuration source
 
@@ -426,7 +426,7 @@ var cfg = Pkl.Load<Dictionary<string, object?>>("embedded:database.pkl", opts);
 
 ---
 
-## SchemaRegistry â€” Typed Deserialization of Nested Objects
+## SchemaRegistry — Typed Deserialization of Nested Objects
 
 Map Pkl class names to C# types for automatic deserialization:
 
@@ -456,7 +456,7 @@ Console.WriteLine($"{db.Host}:{db.Port}");  // db.local:5432
 
 ## Built-in MessagePack API
 
-Pkl.Net ships a full standalone MessagePack encoder/decoder â€” use it independently of Pkl:
+Pkl.Net ships a full standalone MessagePack encoder/decoder — use it independently of Pkl:
 
 ```csharp
 using PklNet.Core;
@@ -541,7 +541,7 @@ catch (PklException ex)
 
 ## Migrating from appsettings.json
 
-### Before â€” standard ASP.NET Core JSON config
+### Before — standard ASP.NET Core JSON config
 
 ```json
 // appsettings.json
@@ -566,12 +566,12 @@ catch (PklException ex)
 ```
 
 ```csharp
-// Program.cs â€” before
+// Program.cs — before
 var builder = WebApplication.CreateBuilder(args);
 // appsettings.json is loaded automatically
 ```
 
-### After â€” equivalent Pkl file
+### After — equivalent Pkl file
 
 ```pkl
 // appsettings.pkl
@@ -587,14 +587,14 @@ ConnectionStrings {
 }
 App {
   Name: String = "MyWebApp"
-  Port: Int(this > 0 && this <= 65535) = 5000   // â† validated!
+  Port: Int(this > 0 && this <= 65535) = 5000   // → validated!
   Debug: Boolean = false
-  MaxRequestSize: DataSize = 10.mib              // â† readable unit!
+  MaxRequestSize: DataSize = 10.mib              // → readable unit!
 }
 ```
 
 ```csharp
-// Program.cs â€” after
+// Program.cs — after
 using PklNet.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -610,7 +610,7 @@ var app = builder.Build();
 ### Environment-specific overrides (replaces appsettings.Development.json)
 
 ```pkl
-// appsettings.Development.pkl  â€” amends the base without copying it
+// appsettings.Development.pkl  — amends the base without copying it
 amends "appsettings.pkl"
 
 App {
@@ -622,7 +622,7 @@ ConnectionStrings {
 }
 ```
 
-### Binding to typed options â€” same as with JSON
+### Binding to typed options — same as with JSON
 
 ```csharp
 public sealed class AppOptions
@@ -647,7 +647,7 @@ public class HomeController(IOptions<AppOptions> opts) : Controller
 
 ## Migrating from YAML
 
-### Before â€” YAML config (e.g. Serilog, Kubernetes-style, custom)
+### Before — YAML config (e.g. Serilog, Kubernetes-style, custom)
 
 ```yaml
 # config.yaml
@@ -664,8 +664,8 @@ database:
   poolSize: 10
 
 cache:
-  ttl: 300         # seconds â€” not self-documenting
-  maxSize: 524288  # bytes â€” what unit is this?
+  ttl: 300         # seconds — not self-documenting
+  maxSize: 524288  # bytes — what unit is this?
 
 features:
   darkMode: false
@@ -678,7 +678,7 @@ tags:
   - v2
 ```
 
-### After â€” equivalent Pkl file
+### After — equivalent Pkl file
 
 ```pkl
 // config.pkl
@@ -713,7 +713,7 @@ tags: Listing<String> = new { "web"; "api"; "v2" }
 ### Loading YAML-style config with Pkl.Net
 
 ```csharp
-// Option A â€” via IConfiguration (flattened, colon-separated keys)
+// Option A — via IConfiguration (flattened, colon-separated keys)
 using PklNet.Extensions.Configuration;
 
 var config = new ConfigurationBuilder()
@@ -724,7 +724,7 @@ string appName = config["app:name"]!;          // "MyService"
 int    dbPort  = int.Parse(config["database:port"]!); // 5432
 string ttl     = config["cache:ttl"]!;         // "300 s"
 
-// Option B â€” typed deserialization
+// Option B — typed deserialization
 var cfg = Pkl.Load<AppConfig>("config.pkl");
 Console.WriteLine(cfg!.App.Port);   // 8080
 Console.WriteLine(cfg.Cache.Ttl);   // PklDuration { Value=300, Unit="s" }
@@ -760,7 +760,7 @@ public sealed class CacheSection
 
 ---
 
-## Writing Pkl Files by Hand â€” Syntax Reference
+## Writing Pkl Files by Hand — Syntax Reference
 
 ### Primitive types
 
@@ -792,7 +792,7 @@ maybePort: Int?    = null
 ### Constrained types (validation built-in)
 
 ```pkl
-// Inline constraint â€” evaluated at load time
+// Inline constraint — evaluated at load time
 port:        Int(this >= 1024 && this <= 65535) = 8080
 name:        String(this.length > 0) = "required"
 probability: Float(this >= 0.0 && this <= 1.0) = 0.75
@@ -801,12 +801,12 @@ probability: Float(this >= 0.0 && this <= 1.0) = 0.75
 ### Duration and DataSize
 
 ```pkl
-// Duration â€” ns, us, ms, s, min, h, d
+// Duration — ns, us, ms, s, min, h, d
 requestTimeout: Duration = 30.s
 sessionExpiry:  Duration = 2.h
 retryDelay:     Duration = 500.ms
 
-// DataSize â€” b, kb, kib, mb, mib, gb, gib, tb, tib
+// DataSize — b, kb, kib, mb, mib, gb, gib, tb, tib
 uploadLimit: DataSize = 10.mb
 cacheSize:   DataSize = 512.mib
 diskQuota:   DataSize = 2.gb
@@ -819,7 +819,7 @@ diskQuota:   DataSize = 2.gb
 ports: Listing<Int> = new { 80; 443; 8080 }
 roles: Listing<String> = new { "admin"; "user"; "guest" }
 
-// Mapping (key â†’ value)
+// Mapping (key → value)
 env: Mapping<String, String> = new {
   ["NODE_ENV"]  = "production"
   ["LOG_LEVEL"] = "warn"
@@ -865,7 +865,7 @@ appName: String = "BaseApp"
 port:    Int    = 3000
 debug:   Boolean = false
 
-// production.pkl  â€” override specific values without copy-paste
+// production.pkl  — override specific values without copy-paste
 amends "base.pkl"
 port  = 80
 debug = false
@@ -916,7 +916,7 @@ port: Int = 8080
 ## License
 
 Pkl.Net is released under the **MIT License with Attribution Requirement**.  
-You are free to use it for any purpose â€” commercial or open-source â€” as long as you include a clearly visible citation of Pkl.Net in your documentation, About page, or dependency list. See [LICENSE](LICENSE) for the exact required wording.
+You are free to use it for any purpose — commercial or open-source — as long as you include a clearly visible citation of Pkl.Net in your documentation, About page, or dependency list. See [LICENSE](LICENSE) for the exact required wording.
 
 **Example attribution (any of the following is sufficient):**
 
@@ -924,7 +924,7 @@ You are free to use it for any purpose â€” commercial or open-source â€�
 
 or in a NuGet dependency list:
 
-> `PklNet.Core` â€” Francesco Paolo Passaro â€” https://www.nuget.org/packages/PklNet.Core
+> `PklNet.Core` — Francesco Paolo Passaro — https://www.nuget.org/packages/PklNet.Core
 
 ---
 
@@ -946,5 +946,5 @@ The **Apple** name and logo are registered trademarks of **Apple Inc.**, registe
 - NuGet: <https://www.nuget.org/packages/PklNet.Core>
 - Pkl language: <https://pkl-lang.org>
 
-*Pkl.Net â€” Passaro Francesco Paolo 2026*
+*Pkl.Net — Passaro Francesco Paolo 2026*
 

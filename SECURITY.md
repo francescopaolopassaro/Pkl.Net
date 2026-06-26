@@ -1,4 +1,4 @@
-﻿# Security Policy
+# Security Policy
 
 ![Pkl.Net Logo](assets/icon.jpg)
 
@@ -8,8 +8,8 @@ Only the latest release receives security patches.
 
 | Version | Supported |
 |---------|-----------|
-| 1.0.x   | âœ… Yes    |
-| < 1.0   | âŒ No     |
+| 1.0.x   | ✅ Yes    |
+| < 1.0   | ❌ No     |
 
 ---
 
@@ -20,7 +20,7 @@ Only the latest release receives security patches.
 Report vulnerabilities privately by one of the following methods:
 
 - **Email:** passaroweb@gmail.com  
-  Subject: `[SECURITY] Pkl.Net â€” <short description>`
+  Subject: `[SECURITY] Pkl.Net — <short description>`
 - **GitHub Private Advisory:** use the *"Report a vulnerability"* button on  
   <https://github.com/francescopaolopassaro/Pkl.Net/security/advisories/new>
 
@@ -67,8 +67,8 @@ The built-in MsgPack decoder does not execute arbitrary code and does not deseri
 
 PklNet.Core has **zero external NuGet dependencies**. The only external surface is:
 
-- `pkl` CLI binary â€” sourced from <https://pkl-lang.org> (Apple Inc.)
-- `Microsoft.Extensions.Configuration` (â‰¥ 9.0) â€” used only by `PklNet.Extensions.Configuration`
+- `pkl` CLI binary — sourced from <https://pkl-lang.org> (Apple Inc.)
+- `Microsoft.Extensions.Configuration` (≥ 9.0) — used only by `PklNet.Extensions.Configuration`
 
 ---
 
@@ -79,6 +79,6 @@ See [LICENSE](LICENSE) for details.
 
 ---
 
-*Pkl.Net â€” Passaro Francesco Paolo 2026*  
+*Pkl.Net — Passaro Francesco Paolo 2026*  
 <https://github.com/francescopaolopassaro/Pkl.Net>
 
