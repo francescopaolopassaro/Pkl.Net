@@ -4,8 +4,8 @@
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
-    <PackageId>Pkl.Net.Core</PackageId>
-    <Title>Pkl.Net.Core</Title>
+    <PackageId>PklNet.Core</PackageId>
+    <Title>PklNet.Core</Title>
     <Description>
       Core library for evaluating Apple Pkl configuration files from .NET.
       Implements the pkl-server binary protocol (MessagePack) from scratch with

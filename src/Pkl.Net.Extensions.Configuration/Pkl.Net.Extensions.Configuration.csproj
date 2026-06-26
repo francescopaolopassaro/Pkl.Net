@@ -4,8 +4,8 @@
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
-    <PackageId>Pkl.Net.Extensions.Configuration</PackageId>
-    <Title>Pkl.Net.Extensions.Configuration</Title>
+    <PackageId>PklNet.Extensions.Configuration</PackageId>
+    <Title>PklNet.Extensions.Configuration</Title>
     <Description>
       ASP.NET Core IConfiguration integration for Pkl.Net. Adds AddPklFile() and
       AddPklText() extension methods to IConfigurationBuilder so you can replace
