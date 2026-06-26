@@ -30,11 +30,9 @@ server:
 port: Int(this >= 1024 && this <= 65535) = 8080
 ```
 
-<<<<<<< HEAD
+
 **Pkl.Net** bridges Pkl and .NET with a clean C# API, typed deserialization, ASP.NET Core integration, and a public MessagePack encoder/decoder — all in a single library with no third-party dependencies.
-=======
-**Pkl.Net** bridges Pkl and .NET with a clean C# API, typed deserialization, ASP.NET Core integration, and a public MessagePack encoder/decoder C#” all in a single library with no third-party dependencies.
->>>>>>> 0cdfc07129e168d3654af822be0290d65965cdc4
+
 
 ---
 
